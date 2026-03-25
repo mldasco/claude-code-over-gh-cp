@@ -1,0 +1,39 @@
+# Environment files — contain secrets, generate with: python generate_env.py
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# LiteLLM runtime artifacts
+*.db
+*.db-journal
+litellm_uuid.log
+proxy_server_config.yaml
+router_config.yaml
+.litellm/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
