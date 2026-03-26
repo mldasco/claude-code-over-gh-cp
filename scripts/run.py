@@ -34,6 +34,11 @@ def _python() -> str:
     return sys.executable
 
 
+def _base_python() -> str:
+    """Return the system (non-venv) Python, even when a venv is active."""
+    return getattr(sys, "_base_executable", sys.executable)
+
+
 def _venv_python() -> Path:
     if sys.platform == "win32":
         return ROOT / "venv" / "Scripts" / "python.exe"
@@ -60,7 +65,7 @@ def cmd_help() -> int:
 def cmd_setup() -> int:
     print("Setting up environment...")
     Path(ROOT / "scripts").mkdir(exist_ok=True)
-    _check([_python(), "-m", "venv", str(ROOT / "venv")], cwd=ROOT)
+    _check([_base_python(), "-m", "venv", str(ROOT / "venv")], cwd=ROOT)
     _check([str(_venv_python()), "-m", "pip", "install", "-r", "requirements.txt"], cwd=ROOT)
     env_file = ROOT / ".env"
     if env_file.exists():

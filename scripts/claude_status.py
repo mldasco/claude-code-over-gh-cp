@@ -3,7 +3,7 @@
 
 import json
 from pathlib import Path
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from user_home import resolve_workspace_user_home
@@ -51,12 +51,11 @@ def main() -> int:
         try:
             urlopen(req, timeout=3)
             print("Proxy server: Running")
-        except HTTPError as exc:
-            # 401/403 still means the server is up; it just rejected auth.
-            if exc.code in (401, 403):
-                print("Proxy server: Running (auth required)")
-            else:
-                print("Proxy server: Not running (run 'run start')")
+        except HTTPError:
+            # Any HTTP error (401, 403, 503, etc.) means the server is up.
+            print("Proxy server: Running")
+        except URLError:
+            print("Proxy server: Not running (run 'run start')")
         except Exception:
             print("Proxy server: Not running (run 'run start')")
     else:

@@ -28,43 +28,48 @@ npm --version
 
 ## Quick Start
 
-Use `run <command>` from this repo root.
-- **macOS / Linux (Bash/Zsh):** `./run <command>`
-- **Windows PowerShell:** `.\run <command>`
-- **Windows cmd:** `run <command>`
+The `run` script lives in the repo root. How you invoke it depends on your shell:
+
+| Shell | Command style |
+|---|---|
+| macOS / Linux (Bash/Zsh) | `./run <command>` |
+| Windows PowerShell | `.\run <command>` |
+| Windows cmd | `run <command>` |
 
 > **macOS tip:** If `./run` gives a permission error after cloning, run `chmod +x run` once.
 
+The steps below show the command without a prefix — add the appropriate one for your shell.
+
 ### 1. Install Claude Code (if not already installed)
-```bash
+```
 run install-claude
 ```
 
 ### 2. Initial Setup
-```bash
+```
 run setup
 ```
 Creates a Python virtual environment, installs dependencies, and generates API keys in `.env`.
 
 ### 3. Configure Claude Code
-```bash
+```
 run claude-enable
 ```
 Backs up existing Claude settings and configures Claude Code to use `http://localhost:4444`.
 
 ### 4. Start the Proxy
 > **Note:** The first run will prompt for GitHub device authentication — follow the terminal instructions.
-```bash
+```
 run start
 ```
 
 ### 5. Test the Connection
-```bash
+```
 run test
 ```
 
 ### 6. Start Claude Code in your project
-```bash
+```
 claude
 ```
 
@@ -102,3 +107,4 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 - **Reset everything**: `run claude-disable` → `run claude-enable`.
 - **macOS permission denied on `./run`**: Run `chmod +x run` to make the script executable.
 - **macOS `python` not found**: Use `python3` instead, or run `./run` which already uses `python3`.
+- **PowerShell `run` not recognized**: Use `.\run <command>` — PowerShell requires the explicit `./` prefix for local scripts.
