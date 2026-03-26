@@ -2,6 +2,12 @@
 .env
 .env.*
 
+# MCP configuration with credentials
+.mcp.json
+
+# Local Claude app settings
+.claude/
+
 # Python
 __pycache__/
 *.py[cod]

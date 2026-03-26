@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""CLI helper — replaces the Makefile.
+"""Project command runner.
 
 Usage:
+    run <command>
     python scripts/run.py <command>
 
 Commands:

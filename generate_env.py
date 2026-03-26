@@ -9,7 +9,7 @@ salt_key = f"litellm-{uuid.uuid4()}"
 with open('.env', 'w') as f:
     f.write(f'LITELLM_MASTER_KEY={master_key}\n')
     f.write(f'LITELLM_SALT_KEY={salt_key}\n')
-    f.write('ENABLE_NETWORK_MONITOR=true\n')
-    f.write('LOG_LEVEL=DEBUG\n')
+    f.write('ENABLE_NETWORK_MONITOR=false\n')
+    f.write('LOG_LEVEL=INFO\n')
 
 print(f'Master Key: {master_key}')

@@ -11,7 +11,7 @@ try:
     import psutil
 except ImportError:
     print("psutil not installed in the selected Python environment")
-    print("Run make setup and then retry")
+    print("Run 'run setup' and then retry")
     raise SystemExit(1)
 
 
@@ -56,9 +56,6 @@ def main() -> int:
                 continue
             if "stop_litellm.py" in cmdline:
                 continue
-            if name.startswith("make") or name.startswith("mingw32-make"):
-                continue
-
             proc.kill()
             stopped += 1
         except (psutil.NoSuchProcess, psutil.AccessDenied):

@@ -19,14 +19,19 @@ def main() -> int:
 
     if not litellm_path.exists():
         print(f"LiteLLM executable not found at {litellm_path}")
-        print("Run 'make setup' first")
+        print("Run 'run setup' first")
         return 1
 
     home = resolve_workspace_user_home()
     env = apply_user_home_to_env(os.environ, home)
     print(f"Using user home: {home}")
 
-    cmd = [str(litellm_path), "--config", "copilot-config.yaml", "--port", "4444"]
+    cmd = [
+        str(litellm_path),
+        "--config", "copilot-config.yaml",
+        "--host", "127.0.0.1",
+        "--port", "4444"
+    ]
     return subprocess.call(cmd, env=env)
 
 

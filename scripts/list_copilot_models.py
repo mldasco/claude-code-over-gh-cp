@@ -33,7 +33,7 @@ def main() -> int:
     token = read_token(token_path)
     if not token:
         print(f"GitHub Copilot token not found at {token_path}")
-        print("Run 'make start' first to authenticate with GitHub")
+        print("Run 'run start' first to authenticate with GitHub")
         return 1
 
     req = Request(
@@ -87,8 +87,8 @@ def main() -> int:
     print("")
     print("# To use these models:")
     print("# 1. Copy desired model entries to your copilot-config.yaml")
-    print("# 2. Restart LiteLLM: make stop && make start")
-    print("# 3. Test with: make test")
+    print("# 2. Restart LiteLLM: run stop && run start")
+    print("# 3. Test with: run test")
 
     return 0
 

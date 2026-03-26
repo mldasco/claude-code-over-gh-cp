@@ -26,34 +26,36 @@ npm --version
 
 ## Quick Start
 
-All commands use `python scripts/run.py <command>`. Run without arguments to see all available commands.
+Use `run <command>` from this repo root.
+- PowerShell: `.\run <command>`
+- Bash/Zsh: `./run <command>`
 
 ### 1. Install Claude Code (if not already installed)
 ```bash
-python scripts/run.py install-claude
+run install-claude
 ```
 
 ### 2. Initial Setup
 ```bash
-python scripts/run.py setup
+run setup
 ```
 Creates a Python virtual environment, installs dependencies, and generates API keys in `.env`.
 
 ### 3. Configure Claude Code
 ```bash
-python scripts/run.py claude-enable
+run claude-enable
 ```
 Backs up existing Claude settings and configures Claude Code to use `http://localhost:4444`.
 
 ### 4. Start the Proxy
 > **Note:** The first run will prompt for GitHub device authentication — follow the terminal instructions.
 ```bash
-python scripts/run.py start
+run start
 ```
 
 ### 5. Test the Connection
 ```bash
-python scripts/run.py test
+run test
 ```
 
 ### 6. Start Claude Code in your project
@@ -72,7 +74,7 @@ The proxy exposes these Anthropic models (configured in `copilot-config.yaml`):
 | `claude-sonnet-4-5` *(default)* | `github_copilot/claude-sonnet-4.5` | 200k |
 | `claude-haiku-4-5` | `github_copilot/claude-haiku-4.5` | 200k |
 
-To switch the default model, edit `ANTHROPIC_MODEL` in `~/.claude/settings.json`, or update `scripts/claude_enable.py` and re-run `python scripts/run.py claude-enable`.
+To switch the default model, edit `ANTHROPIC_MODEL` in `~/.claude/settings.json`, or update `scripts/claude_enable.py` and re-run `run claude-enable`.
 
 A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_FAST_MODEL`).
 
@@ -80,11 +82,11 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 
 | Command | Description |
 |---|---|
-| `python scripts/run.py claude-status` | Show current Claude settings and proxy health |
-| `python scripts/run.py claude-disable` | Restore Claude Code to default Anthropic servers |
-| `python scripts/run.py stop` | Stop the LiteLLM proxy |
-| `python scripts/run.py list-models` | List all available GitHub Copilot models |
-| `python scripts/run.py list-models-enabled` | List only enabled models |
+| `run claude-status` | Show current Claude settings and proxy health |
+| `run claude-disable` | Restore Claude Code to default Anthropic servers |
+| `run stop` | Stop the LiteLLM proxy |
+| `run list-models` | List all available GitHub Copilot models |
+| `run list-models-enabled` | List only enabled models |
 
 ## Troubleshooting
 

@@ -13,7 +13,7 @@ from user_home import resolve_workspace_user_home
 
 def read_master_key(env_path: Path) -> str:
     if not env_path.exists():
-        raise FileNotFoundError(".env file not found. Run 'make setup' first.")
+        raise FileNotFoundError(".env file not found. Run 'run setup' first.")
 
     for raw_line in env_path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()

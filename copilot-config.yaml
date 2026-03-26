@@ -1,5 +1,16 @@
 litellm_settings:
   drop_params: true
+  # Enable master key authentication
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # Optional: Set request timeout
+  request_timeout: 600
+
+general_settings:
+  # Require authentication for all requests
+  enforce_authentication: true
+  # Rate limiting: 100 requests per minute per user
+  max_parallel_requests: 10
+  global_max_parallel_requests: 20
 
 model_list:
   - model_name: gpt-4

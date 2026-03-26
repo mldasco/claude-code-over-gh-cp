@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+set -e
+
+if [ -x "venv/bin/python" ]; then
+  exec "venv/bin/python" "scripts/run.py" "$@"
+fi
+
+exec python3 "scripts/run.py" "$@"

@@ -56,9 +56,9 @@ def main() -> int:
             if exc.code in (401, 403):
                 print("Proxy server: Running (auth required)")
             else:
-                print("Proxy server: Not running (run 'make start')")
+                print("Proxy server: Not running (run 'run start')")
         except Exception:
-            print("Proxy server: Not running (run 'make start')")
+            print("Proxy server: Not running (run 'run start')")
     else:
         print("Status: Using default Anthropic servers")
 
