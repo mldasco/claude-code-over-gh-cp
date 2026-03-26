@@ -29,7 +29,7 @@ def main() -> int:
                 continue
             if getattr(laddr, "port", None) == 4444 and pid != current_pid:
                 target_pids.add(pid)
-    except (psutil.AccessDenied, RuntimeError):
+    except (psutil.AccessDenied, PermissionError, OSError, RuntimeError):
         pass
 
     for pid in sorted(target_pids):
