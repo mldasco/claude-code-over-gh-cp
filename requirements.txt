@@ -1,5 +1,6 @@
 # Core dependencies
-litellm[proxy]>=1.38.10  # Security: CVE-2024-6587, CVE-2024-5742, CVE-2024-4888 fixed
+# CRITICAL: Avoid 1.82.7 and 1.82.8 - MALICIOUS VERSIONS with credential-stealing backdoor
+litellm[proxy]>=1.38.10,!=1.82.7,!=1.82.8  # Security: CVE-2024-6587, CVE-2024-5742, CVE-2024-4888 fixed
 psutil>=5.9.0
 requests>=2.31.0
 dnspython>=2.4.0
