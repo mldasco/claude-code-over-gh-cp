@@ -12,23 +12,28 @@ Routes Claude Code through the GitHub Copilot API instead of Anthropic's servers
 
 | Dependency | Minimum version | Install |
 |---|---|---|
-| **Python** | 3.11+ | [python.org/downloads](https://www.python.org/downloads/) |
-| **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) — includes `npm` |
+| **Python** | 3.11+ | [python.org/downloads](https://www.python.org/downloads/) or `brew install python` on macOS |
+| **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) or `brew install node` on macOS — includes `npm` |
 | **GitHub Copilot** | Active subscription | Required for API access |
+
+> **macOS note:** Xcode Command Line Tools (`xcode-select --install`) provide `python3` and `git`. Alternatively install Python via [Homebrew](https://brew.sh).
 
 ### Verify prerequisites
 
 ```bash
-python --version    # should be 3.11+
-node --version      # should be 18+
+python3 --version   # should be 3.11+  (use 'python' on Windows)
+node --version       # should be 18+
 npm --version
 ```
 
 ## Quick Start
 
 Use `run <command>` from this repo root.
-- PowerShell: `.\run <command>`
-- Bash/Zsh: `./run <command>`
+- **macOS / Linux (Bash/Zsh):** `./run <command>`
+- **Windows PowerShell:** `.\run <command>`
+- **Windows cmd:** `run <command>`
+
+> **macOS tip:** If `./run` gives a permission error after cloning, run `chmod +x run` once.
 
 ### 1. Install Claude Code (if not already installed)
 ```bash
@@ -90,8 +95,10 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 
 ## Troubleshooting
 
-- **First run authentication**: `run.py start` will prompt for GitHub device auth — complete it in the browser.
-- **Connection errors**: Run `run.py test` to verify the proxy is reachable, and `run.py claude-status` to check settings.
+- **First run authentication**: `run start` will prompt for GitHub device auth — complete it in the browser.
+- **Connection errors**: Run `run test` to verify the proxy is reachable, and `run claude-status` to check settings.
 - **Unsupported parameter errors**: Already handled — `drop_params: true` is set in `copilot-config.yaml`.
-- **Wrong model name**: Run `run.py list-models-enabled` to see valid model IDs, then update `copilot-config.yaml`.
-- **Reset everything**: `run.py claude-disable` → `run.py claude-enable`.
+- **Wrong model name**: Run `run list-models-enabled` to see valid model IDs, then update `copilot-config.yaml`.
+- **Reset everything**: `run claude-disable` → `run claude-enable`.
+- **macOS permission denied on `./run`**: Run `chmod +x run` to make the script executable.
+- **macOS `python` not found**: Use `python3` instead, or run `./run` which already uses `python3`.

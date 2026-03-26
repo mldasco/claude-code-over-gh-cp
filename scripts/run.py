@@ -81,7 +81,7 @@ def cmd_install_claude() -> int:
     rc = _run([npm, "install", "-g", "@anthropic-ai/claude-code"])
     if rc == 0:
         print("Claude Code installed successfully.")
-        print("Run:  python scripts/run.py claude-enable")
+        print("Run:  run claude-enable")
     return rc
 
 
@@ -111,7 +111,7 @@ def cmd_claude_enable() -> int:
     rc = _run([_python(), str(SCRIPTS / "claude_enable_with_backup.py")], cwd=ROOT)
     if rc == 0:
         print("[OK] Claude Code configured to use local proxy")
-        print("[TIP] Run 'python scripts/run.py start' to start the LiteLLM proxy")
+        print("[TIP] Run 'run start' to start the LiteLLM proxy")
     return rc
 
 
