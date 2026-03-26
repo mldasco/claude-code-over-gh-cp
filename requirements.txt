@@ -1,8 +1,9 @@
 # Core dependencies
-litellm[proxy]>=1.0.0
+litellm[proxy]>=1.38.10  # Security: CVE-2024-6587, CVE-2024-5742, CVE-2024-4888 fixed
 psutil>=5.9.0
 requests>=2.31.0
 dnspython>=2.4.0
+fastapi-sso>=0.19.0  # Security: CVE-2025-14546 fixed
 
 # Optional for monitoring
 watchdog>=3.0.0
