@@ -17,9 +17,9 @@ general_settings:
   global_max_parallel_requests: 20
 
   # For cost/usage tracking, uncomment the lines below after running: .\run.ps1 cost-tracking-init --postgres-url <URL>
-  database_url: os.environ/DATABASE_URL
-  store_model_in_db: true
-  store_prompts_in_spend_logs: true
+  #database_url: os.environ/DATABASE_URL
+  #store_model_in_db: true
+  #store_prompts_in_spend_logs: false
 
 model_list:
   - model_name: gpt-5.4
@@ -50,6 +50,12 @@ model_list:
     litellm_params:
       model: github_copilot/claude-opus-4.8
       extra_headers: {"Editor-Version": "vscode/1.121.0", "Copilot-Integration-Id": "vscode-chat"}
+    model_info:
+      base_model: claude-opus-4-8
+      input_cost_per_token: 0.000005              # $5.00 per 1M tokens
+      output_cost_per_token: 0.000025             # $25.00 per 1M tokens
+      cache_creation_input_token_cost: 0.00000625 # $6.25 per 1M tokens
+      cache_read_input_token_cost: 0.00000050     # $0.50 per 1M tokens
   - model_name: claude-haiku-4-6
     litellm_params:
       model: github_copilot/claude-haiku-4.6
@@ -95,4 +101,4 @@ model_list:
       cache_creation_input_token_cost: 0.00000100 # $1.00 per 1M tokens
       cache_read_input_token_cost: 0.00000008      # $0.08 per 1M tokens
 
-# LLM cost references https://github:com/BerriAI/litellm/blob/main/model_prices_and_context_window:json#L2426:
+# LLM cost references https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
