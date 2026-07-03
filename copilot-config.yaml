@@ -5,10 +5,6 @@ litellm_settings:
   # Optional: Set request timeout
   request_timeout: 600
 
-  # optional budget limit
-  max_budget: 20.0 # (float) sets max budget as $30 USD daily
-  budget_duration: 1d # (str) frequency of reset - You can set duration as seconds ("30s"), minutes ("30m"), hours ("30h"), days ("30d").
-
 general_settings:
   # Require authentication for all requests
   enforce_authentication: true

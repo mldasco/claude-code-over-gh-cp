@@ -1,6 +1,6 @@
 # Core dependencies
 # CRITICAL: Avoid 1.82.7 and 1.82.8 - MALICIOUS VERSIONS with credential-stealing backdoor
-litellm[proxy]>=1.86.2,!=1.82.7,!=1.82.8  # Security: CVE-2024-6587, CVE-2024-5742, CVE-2024-4888 fixed
+litellm[proxy]>=1.90.0,!=1.82.7,!=1.82.8  # Security: CVE-2024-6587, CVE-2024-5742, CVE-2024-4888 fixed
 prisma>=0.15.0                             # Required for cost tracking / Admin UI
 psutil>=7.2.2
 requests>=2.34.2
