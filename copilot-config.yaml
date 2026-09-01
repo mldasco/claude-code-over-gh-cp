@@ -42,6 +42,26 @@ model_list:
     litellm_params:
       model: github_copilot/gpt-4.1
       extra_headers: {"Editor-Version": "vscode/1.121.0", "Copilot-Integration-Id": "vscode-chat"}
+  - model_name: claude-opus-5
+    litellm_params:
+      model: github_copilot/claude-opus-5
+      extra_headers: {"Editor-Version": "vscode/1.121.0", "Copilot-Integration-Id": "vscode-chat"}
+    model_info:
+      base_model: claude-opus-5
+      input_cost_per_token: 0.000005              # $5.00 per 1M tokens
+      output_cost_per_token: 0.000025             # $25.00 per 1M tokens
+      cache_creation_input_token_cost: 0.00000625 # $6.25 per 1M tokens
+      cache_read_input_token_cost: 0.00000050     # $0.50 per 1M tokens
+  - model_name: claude-sonnet-5
+    litellm_params:
+      model: github_copilot/claude-sonnet-5
+      extra_headers: {"Editor-Version": "vscode/1.121.0", "Copilot-Integration-Id": "vscode-chat"}
+    model_info:
+      base_model: claude-sonnet-5
+      input_cost_per_token: 0.000002              # $2.00 per 1M tokens
+      output_cost_per_token: 0.000010             # $10.00 per 1M tokens
+      cache_creation_input_token_cost: 0.00000250 # $2.50 per 1M tokens
+      cache_read_input_token_cost: 0.00000020     # $0.20 per 1M tokens
   - model_name: claude-opus-4-8
     litellm_params:
       model: github_copilot/claude-opus-4.8
