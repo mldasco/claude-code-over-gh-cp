@@ -83,10 +83,8 @@ The proxy exposes these Anthropic models (configured in `copilot-config.yaml`):
 | Model name | GitHub Copilot model | Context |
 |---|---|---|
 | `claude-opus-4-8` *(default)* | `github_copilot/claude-opus-4.8` | 200k |
-| `claude-haiku-4-6` | `github_copilot/claude-haiku-4.6` | 200k |
-| `claude-opus-4-6` | `github_copilot/claude-opus-4.6` | 200k |
-| `claude-sonnet-4-6` | `github_copilot/claude-sonnet-4.6` | 200k |
-| `claude-sonnet-4-5` | `github_copilot/claude-sonnet-4.5` | 200k |
+| `claude-opus-5` | `github_copilot/claude-opus-5` | 200k |
+| `claude-sonnet-5` | `github_copilot/claude-sonnet-5` | 200k |
 | `claude-haiku-4-5` | `github_copilot/claude-haiku-4.5` | 200k |
 
 To switch the default model, edit `ANTHROPIC_MODEL` in `~/.claude/settings.json`, or update `scripts/claude_enable.py` and re-run `run claude-enable`.
@@ -156,7 +154,7 @@ run prisma-init
 ### Key Management Workflow
 
 1. **Create virtual keys** for user via the UI
-2. **Set budgets** (e.g., $100/month per user)
+2. **Set budgets** (e.g., $50/month per user)
 3. **Restrict models** (e.g., only allow Claude Haiku for testing)
 4. **Update Claude settings** to use the virtual key instead of master key
 
