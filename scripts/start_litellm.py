@@ -61,14 +61,30 @@ def main() -> int:
             if key:
                 env[key] = val
 
+    no_db = os.environ.get("LITELLM_WITH_DB", "").lower() not in ("1", "true", "yes")
+    config = "copilot-config.yaml"
+    if no_db:
+        # Strip database settings so the proxy never tries to connect to Postgres.
+        env.pop("DATABASE_URL", None)
+        # .env was already loaded above; stop litellm re-reading DATABASE_URL from it.
+        env["PYTHON_DOTENV_DISABLED"] = "1"
+        db_keys = ("database_url:", "store_model_in_db:", "store_prompts_in_spend_logs:")
+        lines = Path(config).read_text(encoding="utf-8").splitlines()
+        kept = [l for l in lines if not l.strip().startswith(db_keys)]
+        nodb = Path("venv") / "copilot-config.nodb.yaml"
+        nodb.write_text("\n".join(kept) + "\n", encoding="utf-8")
+        config = str(nodb)
+        print("Running without database (no cost tracking; use --with-db to enable)")
+
     cmd = [
         str(litellm_path),
-        "--config", "copilot-config.yaml",
+        "--config", config,
         "--host", "127.0.0.1",
         "--port", "4444",
-        # Use db push instead of migrate deploy (our DB was initialized with db push)
-        "--use_prisma_db_push",
     ]
+    if not no_db:
+        # Use db push instead of migrate deploy (our DB was initialized with db push)
+        cmd.append("--use_prisma_db_push")
     return subprocess.call(cmd, env=env)
 
 

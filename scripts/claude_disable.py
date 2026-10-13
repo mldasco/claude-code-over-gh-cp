@@ -27,7 +27,7 @@ def main():
             del settings['env']
 
         # Restore model to opusplan if it was claude-sonnet-4
-        if 'model' in settings and settings['model'] in ('claude-sonnet-4', 'claude-sonnet-4-5', 'claude-opus-4-8'):
+        if 'model' in settings and settings['model'] in ('claude-sonnet-4', 'claude-sonnet-5', 'claude-opus-4-8', 'claude-opus-5'):
             settings['model'] = 'opusplan'
 
         # Save updated settings
