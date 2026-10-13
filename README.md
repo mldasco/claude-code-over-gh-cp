@@ -49,10 +49,11 @@ run install-claude
 ```
 run setup
 ```
-Creates a Python virtual environment, installs dependencies, generates API keys in `.env`, and **automatically sets up cost tracking**:
-- **Windows**: downloads portable PostgreSQL (~350 MB, no admin required) into `postgres/`
-- **macOS**: starts your Homebrew PostgreSQL if available
-- **No PostgreSQL found**: setup completes without cost tracking — run `run cost-tracking-init` later
+Creates a Python virtual environment, installs dependencies, generates API keys in `.env`, and, with `--with-db`, **automatically sets up cost tracking**:
+- **With `--with-db`, Windows**: downloads portable PostgreSQL (~350 MB, no admin required) into `postgres/`
+- **With `--with-db`, macOS**: starts your Homebrew PostgreSQL if available
+- **With `--with-db` but no PostgreSQL found**: setup completes without cost tracking — run `run cost-tracking-init` later
+- **Default is no database**: `run setup` and `run start` skip PostgreSQL entirely (no cost tracking or Admin UI). Pass `--with-db` to both (or set `LITELLM_WITH_DB=1`) to enable PostgreSQL-backed cost tracking.
 
 ### 3. Configure Claude Code
 ```

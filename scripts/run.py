@@ -22,6 +22,10 @@ Commands:
     postgres-start   Start the local portable PostgreSQL instance
     postgres-stop    Stop the local portable PostgreSQL instance
     prisma-init      Run Prisma generate + DB migration
+
+Options:
+    --with-db        (setup/start) Use PostgreSQL for cost tracking. By default the proxy
+                     runs without a database. Same as setting LITELLM_WITH_DB=1.
 """
 
 from __future__ import annotations
@@ -560,6 +564,10 @@ def _apply_litellm_patches() -> None:
     print("[OK] Applied litellm Windows Prisma engine patch")
 
 
+def _no_db() -> bool:
+    return os.environ.get("LITELLM_WITH_DB", "").lower() not in ("1", "true", "yes")
+
+
 def _auto_setup_cost_tracking() -> None:
     """Non-fatal: called at the end of setup to configure cost tracking.
 
@@ -567,6 +575,9 @@ def _auto_setup_cost_tracking() -> None:
     - If DATABASE_URL is in .env but prisma hasn't been run, runs prisma only.
     - Otherwise tries to find/install PostgreSQL and sets everything up.
     """
+    if _no_db():
+        print("[INFO] Skipping PostgreSQL / cost tracking setup (use --with-db to enable)")
+        return
     env_file = ROOT / ".env"
     db_configured = (
         env_file.exists() and "DATABASE_URL" in env_file.read_text(encoding="utf-8")
@@ -653,6 +664,10 @@ def cmd_start() -> int:
         [str(_venv_python()), str(SCRIPTS / "stop_litellm.py")],
         capture_output=True,
     )
+    if _no_db():
+        print("[INFO] Starting proxy without PostgreSQL (use --with-db to enable)")
+        print("Starting LiteLLM proxy...")
+        return _run([_python(), str(SCRIPTS / "start_litellm.py")], cwd=ROOT)
     # Auto-start local PostgreSQL if it was installed by postgres-init
     if _local_pg_bin("pg_ctl").exists() and _LOCAL_PG_DATA.exists():
         # Remove stale PID file left by force-killed postgres (causes pg_ctl to hang).
@@ -1022,6 +1037,9 @@ def main() -> int:
     if len(sys.argv) < 2:
         return cmd_help()
 
+    if "--with-db" in sys.argv[2:]:
+        os.environ["LITELLM_WITH_DB"] = "1"
+        sys.argv.remove("--with-db")
     name = sys.argv[1].lower()
     fn = COMMANDS.get(name)
     if fn is None:
