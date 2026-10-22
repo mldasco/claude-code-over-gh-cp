@@ -4,6 +4,7 @@ Script to enable Claude Code proxy configuration.
 Usage: claude_enable.py <master_key>
 """
 import json
+import re
 import sys
 import os
 from pathlib import Path
@@ -25,18 +26,26 @@ def main():
     # Load existing settings or create empty dict
     settings = {}
     if settings_file.exists():
+        raw = settings_file.read_text(encoding='utf-8')
         try:
-            with open(settings_file, 'r') as f:
-                settings = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            settings = {}
+            settings = json.loads(raw)
+        except json.JSONDecodeError:
+            # Auto-repair known extra closing brace after "env" block if present
+            repaired = re.sub(r'(\s*\})\s*\},\s*(\r?\n\s*"permissions"\s*:)', r'\1,\2', raw, count=1)
+            try:
+                settings = json.loads(repaired)
+                print(f"[OK] Repaired extra closing brace in {settings_file}")
+            except json.JSONDecodeError as exc:
+                print(f"[ERROR] {settings_file} contains invalid JSON ({exc}); refusing to overwrite.")
+                sys.exit(1)
 
     # Add proxy configuration
     settings['env'] = {
         'ANTHROPIC_AUTH_TOKEN': master_key,
         'ANTHROPIC_BASE_URL': 'http://localhost:4444',
         'ANTHROPIC_MODEL': 'claude-opus-4-8',
-        'ANTHROPIC_SMALL_FAST_MODEL': 'gpt-4'
+        'ANTHROPIC_SMALL_FAST_MODEL': 'claude-haiku-4-5',
+        'ANTHROPIC_DEFAULT_HAIKU_MODEL': 'claude-haiku-4-5'
     }
 
     # Update model to use
@@ -47,7 +56,7 @@ def main():
         settings['$schema'] = 'https://json.schemastore.org/claude-code-settings.json'
 
     # Save updated settings
-    with open(settings_file, 'w') as f:
+    with open(settings_file, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=2)
 
     print('[OK] Updated settings while preserving existing configuration')
