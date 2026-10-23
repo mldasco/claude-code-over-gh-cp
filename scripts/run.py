@@ -2,8 +2,8 @@
 """Project command runner.
 
 Usage:
-    run <command>
     python scripts/run.py <command>
+    run <command>  (root launcher; uses the project venv when available)
 
 Commands:
     help             Show this help message

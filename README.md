@@ -34,13 +34,12 @@ On Windows, also check `code --version`. After installing VS Code, reopen your t
 
 ## Quick Start
 
-The `run` script lives in the repo root. How you invoke it depends on your shell:
+The root launchers dispatch commands to the Python runner in `scripts/run.py` and use the project virtual environment when available:
 
 | Shell | Command style |
 |---|---|
 | macOS / Linux (Bash/Zsh) | `./run <command>` |
-| Windows PowerShell | `.\run <command>` |
-| Windows cmd | `run <command>` |
+| Windows Command Prompt | `run <command>` |
 
 > **macOS tip:** If `./run` gives a permission error after cloning, run `chmod +x run` once.
 
@@ -197,7 +196,7 @@ run prisma-init
 - **SSL certificate errors during `run cost-tracking-init`**: Prisma CLI is a Node.js binary. On Windows, this tool automatically exports the Windows trusted root store (including corporate CA certs from IT policy) and passes it to Node.js via `NODE_EXTRA_CA_CERTS`. If you still see SSL errors, set `NODE_EXTRA_CA_CERTS` manually:
   ```powershell
   $env:NODE_EXTRA_CA_CERTS = "C:\path\to\ca-bundle.pem"
-  .\run cost-tracking-init --postgres-url URL
+  .\run.cmd cost-tracking-init --postgres-url URL
   ```
 - **SSL certificate trust errors**: LiteLLM may fail when connecting to `api.individual.githubcopilot.com` if your machine is behind a corporate TLS proxy or firewall that intercepts HTTPS traffic (for example, Zscaler). In that case the proxy presents its own intermediate/root certificate, and Python/OpenSSL must trust that certificate chain.
   - The proxy now preserves and merges any existing `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` bundle with the venv `certifi` bundle, but you still need the proxy root cert in the trusted bundle.
@@ -214,5 +213,4 @@ run prisma-init
 - **Reset everything**: `run claude-disable` → `run claude-enable`.
 - **macOS permission denied on `./run`**: Run `chmod +x run` to make the script executable.
 - **macOS `python` not found**: Use `python3` instead, or run `./run` which already uses `python3`.
-- **PowerShell `run` not recognized**: Use `.\run <command>` — PowerShell requires the explicit `./` prefix for local scripts.
 - **Cost tracking DB errors on Windows (`All connection attempts failed`)**: LiteLLM's DB health watchdog uses `os.kill(pid, 0)` to check whether the Prisma query-engine process is alive. On Windows, signal 0 equals `CTRL_C_EVENT`, so this call actually **terminates** the engine instead of probing it. `run setup` and `run start` automatically patch the affected function in the installed litellm package with a safe Windows API call (`OpenProcess`). If you see these errors after upgrading litellm, run `run setup` again to re-apply the patch.

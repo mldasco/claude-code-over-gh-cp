@@ -4,7 +4,6 @@ run        text eol=lf
 
 # Ensure Windows entry points use CRLF
 run.cmd    text eol=crlf
-run.ps1    text eol=crlf
 
 # Python scripts - auto (LF on checkout for all platforms is fine)
 *.py       text
