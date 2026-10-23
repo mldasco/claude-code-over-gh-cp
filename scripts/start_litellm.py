@@ -105,6 +105,11 @@ def main() -> int:
     # so relative paths in PATH break.
     venv_scripts = str(Path("venv").resolve() / ("Scripts" if os.name == "nt" else "bin"))
     env["PATH"] = venv_scripts + os.pathsep + env.get("PATH", "")
+    if os.name == "nt":
+        version = f"Python{sys.version_info.major}{sys.version_info.minor}"
+        roaming_site = home / "AppData" / "Roaming" / "Python" / version / "site-packages"
+        roaming_scripts = [str(roaming_site / name) for name in ("Scripts", "bin")]
+        env["PATH"] = os.pathsep.join([*roaming_scripts, env["PATH"]])
 
     # Bypass corporate proxy (e.g. Zscaler) for localhost connections.
     # httpx (used by Prisma's Python client) reads NO_PROXY to skip proxy for

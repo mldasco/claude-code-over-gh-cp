@@ -73,6 +73,8 @@ run setup
 ```
 On Windows, also performs the Claude extension copy/PATH configuration from step 1 before installing Python dependencies, so step 1 can be skipped when running `run setup`.
 
+Windows dependencies are installed into the workspace user's `%APPDATA%\Python\Python313\site-packages` (the version follows the Python interpreter). Setup removes existing dependencies from the venv's `Lib\site-packages`, preserving only pip and `roaming_user_site.pth`. The venv provides the interpreter; roaming provides application packages. Run `run setup` again to migrate an existing installation. This user package directory is shared with other projects using the same Python version, and setup upgrades its dependencies. Application Control policy still applies; contact your administrator if a native dependency remains blocked.
+
 Creates a Python virtual environment, installs dependencies, generates API keys in `.env`, and, with `--with-db`, **automatically sets up cost tracking**:
 - **With `--with-db`, Windows**: downloads portable PostgreSQL (~350 MB, no admin required) into `postgres/`
 - **With `--with-db`, macOS**: starts your Homebrew PostgreSQL if available
@@ -90,6 +92,7 @@ Backs up existing Claude settings and configures Claude Code to use `http://loca
 ```
 run start
 ```
+On Windows, startup requires the pip-only venv layout and verifies that Pydantic Core and LiteLLM import successfully before stopping any existing proxy. If the venv still contains local dependencies, startup asks you to run setup instead of silently using a mixed installation.
 
 ### 5. Test the Connection
 ```

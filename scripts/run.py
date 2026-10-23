@@ -75,12 +75,9 @@ def _venv_python() -> Path:
     return ROOT / "venv" / "bin" / "python"
 
 
-def _configure_roaming_user_site() -> None:
-    if sys.platform != "win32":
-        return
-
+def _roaming_user_site() -> Path:
     version = f"Python{sys.version_info.major}{sys.version_info.minor}"
-    roaming_site = (
+    return (
         resolve_workspace_user_home()
         / "AppData"
         / "Roaming"
@@ -88,6 +85,32 @@ def _configure_roaming_user_site() -> None:
         / version
         / "site-packages"
     )
+
+
+def _windows_venv_dependencies() -> list[Path]:
+    packages = ROOT / "venv" / "Lib" / "site-packages"
+    if sys.platform != "win32" or not packages.exists():
+        return []
+    return sorted(
+        entry for entry in packages.iterdir()
+        if entry.name not in ("pip", "roaming_user_site.pth")
+        and not (entry.name.startswith("pip-") and entry.name.endswith(".dist-info"))
+    )
+
+
+def _clean_windows_venv_dependencies() -> None:
+    for entry in _windows_venv_dependencies():
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+
+
+def _configure_roaming_user_site() -> Path | None:
+    if sys.platform != "win32":
+        return None
+
+    roaming_site = _roaming_user_site()
     roaming_site.mkdir(parents=True, exist_ok=True)
 
     pth_file = ROOT / "venv" / "Lib" / "site-packages" / "roaming_user_site.pth"
@@ -96,6 +119,10 @@ def _configure_roaming_user_site() -> None:
         f"import site; site.addsitedir({str(roaming_site)!r})\n",
         encoding="utf-8",
     )
+    import site
+
+    site.addsitedir(str(roaming_site))
+    return roaming_site
 
 
 def _run(cmd: list[str], **kwargs) -> int:
@@ -111,6 +138,9 @@ def _find_litellm_schema() -> "Path | None":
     # Check the venv directly first — works when this script is running under
     # the system Python (e.g. during 'run setup' before the venv is activated).
     if sys.platform == "win32":
+        roaming_schema = _roaming_user_site() / "litellm" / "proxy" / "schema.prisma"
+        if roaming_schema.exists():
+            return roaming_schema
         venv_schema = ROOT / "venv" / "Lib" / "site-packages" / "litellm" / "proxy" / "schema.prisma"
         if venv_schema.exists():
             return venv_schema
@@ -134,6 +164,8 @@ def _prisma_bin() -> "Path | None":
     """Return the prisma CLI path inside the venv, or None."""
     if sys.platform == "win32":
         candidates = [
+            _roaming_user_site() / "Scripts" / "prisma.exe",
+            _roaming_user_site() / "bin" / "prisma.exe",
             ROOT / "venv" / "Scripts" / "prisma.exe",
             ROOT / "venv" / "Scripts" / "prisma",
         ]
@@ -497,7 +529,7 @@ def _do_cost_tracking_init(postgres_url: str) -> int:
 
 
 def _apply_litellm_patches() -> None:
-    """Apply in-venv patches to litellm that fix Windows-specific bugs.
+    """Apply patches to the active litellm installation that fix Windows-specific bugs.
 
     Patch: _poll_engine_proc sends CTRL_C_EVENT on Windows
     -------------------------------------------------------
@@ -515,9 +547,10 @@ def _apply_litellm_patches() -> None:
     and is re-applied automatically on each ``run setup`` and ``run start`` so
     that it survives a ``pip install --upgrade litellm``.
     """
-    # Locate utils.py inside the venv
     if sys.platform == "win32":
-        utils_path = ROOT / "venv" / "Lib" / "site-packages" / "litellm" / "proxy" / "utils.py"
+        utils_path = _roaming_user_site() / "litellm" / "proxy" / "utils.py"
+        if not utils_path.exists():
+            utils_path = ROOT / "venv" / "Lib" / "site-packages" / "litellm" / "proxy" / "utils.py"
     else:
         # On POSIX the path includes the Python version directory
         venv_lib = ROOT / "venv" / "lib"
@@ -657,8 +690,24 @@ def cmd_setup() -> int:
     print("Setting up environment...")
     Path(ROOT / "scripts").mkdir(exist_ok=True)
     _check([_base_python(), "-m", "venv", str(ROOT / "venv")], cwd=ROOT)
-    _configure_roaming_user_site()
-    _check([str(_venv_python()), "-m", "pip", "install", "-r", "requirements.txt"], cwd=ROOT)
+    _clean_windows_venv_dependencies()
+    roaming_site = _configure_roaming_user_site()
+    install_cmd = [str(_venv_python()), "-m", "pip", "install"]
+    if roaming_site is not None:
+        print(f"Installing Python dependencies into: {roaming_site}", flush=True)
+        install_cmd.extend(["--target", str(roaming_site), "--upgrade"])
+    _check([*install_cmd, "-r", "requirements.txt"], cwd=ROOT)
+    if roaming_site is not None:
+        print("Verifying roaming dependency imports...", flush=True)
+        _check(
+            [
+                str(_venv_python()), "-u", "-c",
+                "import pydantic_core, litellm; from litellm import run_server; "
+                "print('Pydantic Core:', pydantic_core.__file__); "
+                "print('LiteLLM:', litellm.__file__)",
+            ],
+            cwd=ROOT,
+        )
     _apply_litellm_patches()
     env_file = ROOT / ".env"
     if env_file.exists():
@@ -774,6 +823,21 @@ def cmd_start() -> int:
         print("  macOS/Linux: ./run setup")
         return 1
 
+    if _windows_venv_dependencies():
+        print("Windows venv contains local dependencies instead of the roaming-only layout.")
+        print("Run 'run.cmd setup' to remove local venv packages and install into roaming.")
+        return 1
+
+    _configure_roaming_user_site()
+    if sys.platform == "win32":
+        rc = _run(
+            [str(venv_python), "-c", "import pydantic_core; from litellm import run_server"],
+            cwd=ROOT,
+        )
+        if rc != 0:
+            print("Windows dependency check failed; the existing proxy was not stopped.")
+            print("Run 'run.cmd setup'; policy-blocked DLLs require administrator review.")
+            return rc
     # Re-apply patches in case litellm was upgraded since setup
     _apply_litellm_patches()
     # Kill any leftover litellm process from a previous run before starting.
@@ -972,9 +1036,11 @@ def cmd_postgres_stop() -> int:
 
 
 def _prisma_in_venv() -> bool:
-    """True if the prisma package is installed inside the venv."""
+    """True if prisma is installed in an active package directory."""
     if sys.platform == "win32":
-        return (_venv_python().parent.parent / "Lib" / "site-packages" / "prisma").is_dir()
+        return (_roaming_user_site() / "prisma").is_dir() or (
+            _venv_python().parent.parent / "Lib" / "site-packages" / "prisma"
+        ).is_dir()
     return bool(list(
         (_venv_python().parent.parent / "lib").glob("python*/site-packages/prisma")
     ))
@@ -988,7 +1054,11 @@ def cmd_prisma_init() -> int:
     # when this script is running under the system Python (e.g. during setup).
     if not _prisma_in_venv():
         print("  prisma package not found — installing...")
-        rc = _run([str(_venv_python()), "-m", "pip", "install", "prisma"])
+        install_cmd = [str(_venv_python()), "-m", "pip", "install"]
+        roaming_site = _configure_roaming_user_site()
+        if roaming_site is not None:
+            install_cmd.extend(["--target", str(roaming_site), "--upgrade"])
+        rc = _run([*install_cmd, "prisma"])
         if rc != 0:
             print("ERROR: Failed to install prisma. Run 'run setup' to reinstall dependencies.")
             return rc
@@ -1009,6 +1079,7 @@ def cmd_prisma_init() -> int:
     run_env = {**os.environ, **_node_ssl_env()}
     if venv_bin.exists():
         run_env["PATH"] = f"{venv_bin}{os.pathsep}{run_env.get('PATH', '')}"
+    run_env["PATH"] = f"{prisma.parent}{os.pathsep}{run_env.get('PATH', '')}"
 
     rc = _run([str(prisma), "generate", "--schema", str(schema)], env=run_env)
     if rc != 0:
