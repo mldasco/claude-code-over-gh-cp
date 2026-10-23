@@ -106,12 +106,13 @@ class WindowsClaudeInstallTests(unittest.TestCase):
             ), patch.object(runner, "resolve_workspace_user_home", return_value=home):
                 runner._configure_roaming_user_site()
                 pth_file = root / "venv" / "Lib" / "site-packages" / "roaming_user_site.pth"
-                self.assertEqual(pth_file.read_text(encoding="utf-8"), f"{roaming_site}\n")
+                expected_pth = f"import site; site.addsitedir({str(roaming_site)!r})\n"
+                self.assertEqual(pth_file.read_text(encoding="utf-8"), expected_pth)
                 self.assertTrue(roaming_site.is_dir())
 
                 pth_file.write_text("stale path\n", encoding="utf-8")
                 runner._configure_roaming_user_site()
-                self.assertEqual(pth_file.read_text(encoding="utf-8"), f"{roaming_site}\n")
+                self.assertEqual(pth_file.read_text(encoding="utf-8"), expected_pth)
 
     def test_roaming_user_site_is_not_configured_off_windows(self):
         with patch.object(runner.sys, "platform", "linux"), patch.object(

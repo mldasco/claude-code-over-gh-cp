@@ -92,7 +92,10 @@ def _configure_roaming_user_site() -> None:
 
     pth_file = ROOT / "venv" / "Lib" / "site-packages" / "roaming_user_site.pth"
     pth_file.parent.mkdir(parents=True, exist_ok=True)
-    pth_file.write_text(f"{roaming_site}\n", encoding="utf-8")
+    pth_file.write_text(
+        f"import site; site.addsitedir({str(roaming_site)!r})\n",
+        encoding="utf-8",
+    )
 
 
 def _run(cmd: list[str], **kwargs) -> int:
