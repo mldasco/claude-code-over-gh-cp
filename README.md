@@ -12,7 +12,7 @@ Routes Claude Code through the GitHub Copilot API instead of Anthropic's servers
 
 | Dependency | Minimum version | Install |
 |---|---|---|
-| **Python** | 3.13+ | [python.org/downloads](https://www.python.org/downloads/) or `brew install python` on macOS |
+| **Python** | 3.13 | [python.org/downloads](https://www.python.org/downloads/) or `brew install python@3.13` on macOS |
 | **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) or `brew install node` on macOS — includes `npm` |
 | **Visual Studio Code (Windows)** | 1.94+ | [code.visualstudio.com](https://code.visualstudio.com/) — enable **Add to PATH** during installation so `code` works in a terminal |
 | **Claude Code for VS Code (Windows)** | Latest compatible version | Install extension **Anthropic.claude-code** in local VS Code; `run install-claude` / `run setup` install it if missing |
@@ -24,8 +24,18 @@ On Windows, VS Code and its Claude Code extension are required: setup uses the e
 
 ### Verify prerequisites
 
+The quickest check is the built-in preflight, which also runs automatically at the start of `run setup`:
+
+```
+run doctor
+```
+
+It reports Python version, VS Code (Windows), Node.js, and — once you've authenticated — whether your **GitHub Copilot seat is active** (via the Copilot `/models` endpoint). A missing or lapsed seat shows as `[FAIL]`. Before your first authentication it reports Copilot as not-yet-authenticated (informational, non-blocking) — the seat is verified for real during setup / `run start`.
+
+To check interpreter versions manually:
+
 ```bash
-python3 --version   # should be 3.13+  (use 'python' on Windows)
+python3 --version   # should be 3.13   (use 'python' on Windows)
 node --version       # should be 18+
 npm --version
 ```
@@ -33,6 +43,21 @@ npm --version
 On Windows, also check `code --version`. After installing VS Code, reopen your terminal if `code` is not found.
 
 ## Quick Start
+
+**TL;DR** — from a fresh clone, with [prerequisites](#prerequisites) installed (Python 3.13; VS Code on Windows / Node on macOS-Linux). Prefix commands with `./` on macOS/Linux, nothing on Windows:
+
+```
+run doctor         # confirm prerequisites (optional)
+run setup          # venv + deps + .env  (also installs the Claude VS Code extension on Windows)
+run claude-enable  # point Claude Code at the local proxy (localhost:4444)
+run start          # start the proxy — completes GitHub device auth in your browser on first run
+run test           # verify the connection (optional)
+claude             # use Claude Code in your project
+```
+
+Three commands are essential — `setup` → `claude-enable` → `start` — then run `claude`. No database is used by default; pass `--with-db` to `setup` and `start` for PostgreSQL-backed cost tracking. On Windows, restart your terminal after the first `setup` so `claude` resolves on PATH.
+
+The detailed walkthrough follows.
 
 The root launchers dispatch commands to the Python runner in `scripts/run.py` and use the project virtual environment when available:
 
@@ -124,6 +149,7 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 
 | Command | Description |
 |---|---|
+| `run doctor` | Check prerequisites (Python/VS Code/Node) and GitHub Copilot seat without changing anything |
 | `run install-claude` | Windows: install/find the VS Code extension, copy its bundled CLI to the extension root, and refresh user PATH; macOS/Linux: install via npm |
 | `run claude-status` | Show current Claude settings and proxy health |
 | `run claude-disable` | Restore Claude Code to default Anthropic servers |

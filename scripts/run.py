@@ -7,6 +7,7 @@ Usage:
 
 Commands:
     help             Show this help message
+    doctor           Check prerequisites and GitHub Copilot seat (no changes)
     setup            Create venv, install dependencies, generate .env
     install-claude   Configure Claude Code from VS Code (Windows); npm elsewhere
     start            Start the LiteLLM proxy
@@ -623,6 +624,98 @@ def _apply_litellm_patches() -> None:
     print("[OK] Applied litellm Windows Prisma engine patch")
 
 
+def _copilot_access_token_path() -> Path:
+    return (
+        resolve_workspace_user_home()
+        / ".config" / "litellm" / "github_copilot" / "access-token"
+    )
+
+
+def _verify_copilot_seat() -> "tuple[str, str]":
+    """Check GitHub Copilot entitlement via the /models endpoint.
+
+    Returns (status, detail) where status is one of:
+      "ok"      - seat active, models reachable
+      "no-auth" - no access token yet (authenticate with 'run start')
+      "no-seat" - token present but Copilot access denied (401/403)
+      "error"   - network/other error; seat state unknown
+    """
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    token_path = _copilot_access_token_path()
+    token = token_path.read_text(encoding="utf-8").strip() if token_path.exists() else ""
+    if not token:
+        return "no-auth", "no GitHub Copilot token yet"
+
+    req = urllib.request.Request(
+        "https://api.githubcopilot.com/models",
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            payload = _json.loads(resp.read().decode("utf-8", errors="replace"))
+        count = sum(
+            1 for m in payload.get("data", [])
+            if (m.get("capabilities") or {}).get("type") == "chat"
+        )
+        return "ok", f"{count} chat model(s) available"
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            return "no-seat", f"Copilot access denied (HTTP {exc.code})"
+        return "error", f"HTTP {exc.code}"
+    except OSError as exc:
+        return "error", str(exc)
+
+
+def _preflight() -> int:
+    """Report prerequisite status up front. Returns 0 if setup can proceed."""
+    print("Preflight checks:")
+    blocking = False
+
+    vi = sys.version_info
+    if (3, 13) <= vi < (3, 14):
+        print(f"  [OK]   Python {vi.major}.{vi.minor}.{vi.micro}")
+    else:
+        print(f"  [FAIL] Python {vi.major}.{vi.minor} - this project requires Python 3.13.")
+        print("         Install from https://python.org/downloads/ and re-run with it, e.g.:")
+        print("           py -3.13 scripts\\run.py setup")
+        blocking = True
+
+    if sys.platform == "win32":
+        if shutil.which("code"):
+            print("  [OK]   VS Code ('code' on PATH)")
+        else:
+            print("  [FAIL] VS Code not found - install https://code.visualstudio.com/")
+            print("         Enable its 'Add to PATH' option and reopen your terminal.")
+            blocking = True
+
+    if shutil.which("node"):
+        print("  [OK]   Node.js")
+    else:
+        print("  [WARN] Node.js not found - only needed for cost tracking (Prisma). "
+              "Install from https://nodejs.org/ if you plan to use --with-db.")
+
+    status, detail = _verify_copilot_seat()
+    if status == "ok":
+        print(f"  [OK]   GitHub Copilot seat active - {detail}")
+    elif status == "no-auth":
+        print("  [INFO] GitHub Copilot not authenticated yet - you'll be prompted "
+              "during setup / 'run start'.")
+    elif status == "no-seat":
+        print(f"  [FAIL] GitHub Copilot seat NOT active - {detail}.")
+        print("         Confirm your account has an active Copilot subscription, "
+              "then re-authenticate.")
+        blocking = True
+    else:
+        print(f"  [WARN] Could not verify GitHub Copilot seat - {detail}.")
+
+    print()
+    return 1 if blocking else 0
+
+
 def _no_db() -> bool:
     return os.environ.get("LITELLM_WITH_DB", "").lower() not in ("1", "true", "yes")
 
@@ -674,15 +767,7 @@ def cmd_help() -> int:
 
 
 def cmd_setup() -> int:
-    vi = sys.version_info
-    if vi >= (3, 14):
-        print(
-            f"ERROR: Python {vi.major}.{vi.minor} is not supported.\n"
-            "litellm requires Python >=3.10,<3.14.\n"
-            "Install Python 3.12 or 3.13 from https://python.org/downloads/ "
-            "and re-run this script with that interpreter, e.g.:\n"
-            "  py -3.12 scripts\\run.py setup"
-        )
+    if _preflight() != 0:
         return 1
     if sys.platform == "win32":
         rc = cmd_install_claude()
@@ -1223,12 +1308,18 @@ def cmd_generate_key() -> int:
     return 0
 
 
+def cmd_doctor() -> int:
+    """Run prerequisite + GitHub Copilot seat checks without changing anything."""
+    return _preflight()
+
+
 # ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 
 COMMANDS: dict[str, object] = {
     "help": cmd_help,
+    "doctor": cmd_doctor,
     "setup": cmd_setup,
     "install-claude": cmd_install_claude,
     "start": cmd_start,
