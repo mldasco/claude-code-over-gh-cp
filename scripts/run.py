@@ -17,6 +17,7 @@ Commands:
     claude-status    Show current Claude Code configuration and proxy health
     list-models      List all available GitHub Copilot models
     list-models-enabled  List only enabled GitHub Copilot models
+    refresh-models   Add new enabled models to config and restart the proxy
     cost-tracking-init [--postgres-url URL]  Set up cost tracking (auto-installs PostgreSQL if needed)
     postgres-init    Explicitly set up local portable PostgreSQL (Windows) or use system (macOS/Linux)
     postgres-start   Start the local portable PostgreSQL instance
@@ -718,7 +719,8 @@ def cmd_setup() -> int:
     print("[OK] Setup complete")
     print()
     _auto_setup_cost_tracking()
-    return 0
+    print("Refreshing GitHub Copilot models...")
+    return _refresh_copilot_model_config()
 
 
 def _configure_windows_claude_path(directory: Path) -> None:
@@ -942,6 +944,30 @@ def cmd_list_models() -> int:
 def cmd_list_models_enabled() -> int:
     print("Listing enabled GitHub Copilot models...")
     return _run([_python(), str(SCRIPTS / "list_copilot_models.py"), "--enabled-only"], cwd=ROOT)
+
+
+def _refresh_copilot_model_config() -> int:
+    python = str(_venv_python())
+    rc = _run(
+        [python, str(SCRIPTS / "start_litellm.py"), "--auth-only"],
+        cwd=ROOT,
+    )
+    if rc != 0:
+        print("ERROR: Could not authenticate with GitHub Copilot; models were not refreshed.")
+        return rc
+    return _run(
+        [python, str(SCRIPTS / "list_copilot_models.py"), "--refresh-config"],
+        cwd=ROOT,
+    )
+
+
+def cmd_refresh_models() -> int:
+    print("Refreshing enabled GitHub Copilot models in copilot-models.local.yaml...")
+    rc = _refresh_copilot_model_config()
+    if rc != 0:
+        return rc
+    print("Restarting LiteLLM proxy with the refreshed model config...")
+    return cmd_start()
 
 
 def cmd_cost_tracking_init() -> int:
@@ -1213,6 +1239,7 @@ COMMANDS: dict[str, object] = {
     "claude-status": cmd_claude_status,
     "list-models": cmd_list_models,
     "list-models-enabled": cmd_list_models_enabled,
+    "refresh-models": cmd_refresh_models,
     "cost-tracking-init": cmd_cost_tracking_init,
     "generate-key": cmd_generate_key,
     "postgres-init": cmd_postgres_init,

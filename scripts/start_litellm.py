@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 from user_home import apply_user_home_to_env, resolve_workspace_user_home
 
 
@@ -85,6 +87,22 @@ def _ensure_copilot_token(env: dict[str, str], home: Path) -> int:
     )
 
 
+def _write_runtime_config(base_config: Path, model_config: Path, output: Path) -> Path:
+    base_text = base_config.read_text(encoding="utf-8")
+    model_text = model_config.read_text(encoding="utf-8")
+    base_data = yaml.safe_load(base_text)
+    model_data = yaml.safe_load(model_text)
+    if not isinstance(base_data, dict) or not isinstance(model_data, dict):
+        raise ValueError("Proxy and local model config files must contain YAML mappings")
+    if not isinstance(model_data.get("model_list"), list) or not model_data["model_list"]:
+        raise ValueError("copilot-models.local.yaml must contain at least one model")
+
+    combined = f"{base_text.rstrip()}\n\n{model_text.strip()}\n"
+    yaml.safe_load(combined)
+    output.write_text(combined, encoding="utf-8")
+    return output
+
+
 def main() -> int:
     py = _venv_python()
     if not py.exists():
@@ -142,16 +160,30 @@ def main() -> int:
     if rc != 0:
         print("ERROR: GitHub Copilot authentication failed.")
         return rc
+    if "--auth-only" in sys.argv[1:]:
+        return 0
 
     no_db = os.environ.get("LITELLM_WITH_DB", "").lower() not in ("1", "true", "yes")
-    config = str(Path("copilot-config.yaml").resolve())
+    base_config = Path("copilot-config.yaml")
+    model_config = Path("copilot-models.local.yaml")
+    if not model_config.exists():
+        print(f"Model config not found at {model_config}; run 'run setup' or 'run refresh-models'.")
+        return 1
+
+    runtime_config = Path("venv") / "copilot-config.generated.yaml"
+    try:
+        _write_runtime_config(base_config, model_config, runtime_config)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        print(f"ERROR: Could not build LiteLLM runtime config: {exc}")
+        return 1
+    config = str(runtime_config.resolve())
     if no_db:
         # Strip database settings so the proxy never tries to connect to Postgres.
         env.pop("DATABASE_URL", None)
         # .env was already loaded above; stop litellm re-reading DATABASE_URL from it.
         env["PYTHON_DOTENV_DISABLED"] = "1"
         db_keys = ("database_url:", "store_model_in_db:", "store_prompts_in_spend_logs:")
-        lines = Path(config).read_text(encoding="utf-8").splitlines()
+        lines = runtime_config.read_text(encoding="utf-8").splitlines()
         kept = [l for l in lines if not l.strip().startswith(db_keys)]
         nodb = Path("venv").resolve() / "copilot-config.nodb.yaml"
         nodb.write_text("\n".join(kept) + "\n", encoding="utf-8")

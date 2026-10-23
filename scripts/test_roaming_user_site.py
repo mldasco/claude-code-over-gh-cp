@@ -8,9 +8,34 @@ import unittest
 from unittest.mock import patch
 
 import run as runner
+import start_litellm
 
 
 class RoamingUserSiteTests(unittest.TestCase):
+    def test_runtime_config_combines_settings_with_local_models(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base_config = root / "copilot-config.yaml"
+            model_config = root / "copilot-models.local.yaml"
+            output = root / "venv/copilot-config.generated.yaml"
+            output.parent.mkdir()
+            base_config.write_text("litellm_settings:\n  drop_params: true\n", encoding="utf-8")
+            model_config.write_text(
+                "model_list:\n  - model_name: local-model\n"
+                "    litellm_params:\n      model: github_copilot/local-model\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                start_litellm._write_runtime_config(base_config, model_config, output),
+                output,
+            )
+            import yaml
+
+            data = yaml.safe_load(output.read_text(encoding="utf-8"))
+            self.assertTrue(data["litellm_settings"]["drop_params"])
+            self.assertEqual(data["model_list"][0]["model_name"], "local-model")
+
     def test_setup_cleanup_preserves_only_pip_and_roaming_path(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -92,14 +117,34 @@ class RoamingUserSiteTests(unittest.TestCase):
                 runner, "cmd_install_claude", return_value=0
             ), patch.object(runner, "_check") as check, patch.object(
                 runner, "_apply_litellm_patches"
-            ), patch.object(runner, "_auto_setup_cost_tracking"), contextlib.redirect_stdout(io.StringIO()):
+            ), patch.object(runner, "_auto_setup_cost_tracking"), patch.object(
+                runner, "_refresh_copilot_model_config", return_value=0
+            ) as refresh, contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.cmd_setup(), 0)
+                refresh.assert_called_once_with()
                 self.assertEqual(
                     check.call_args_list[1].args[0],
                     [str(runner._venv_python()), "-m", "pip", "install", "--target",
                      str(root / "roaming"), "--upgrade", "-r", "requirements.txt"],
                 )
                 self.assertIn("from litellm import run_server", check.call_args_list[2].args[0][-1])
+
+    def test_model_refresh_authenticates_before_fetching_models(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            python = root / "venv" / "Scripts" / "python.exe"
+            with patch.object(runner, "ROOT", root), patch.object(
+                runner, "_venv_python", return_value=python
+            ), patch.object(runner, "_run", side_effect=[0, 0]) as run:
+                self.assertEqual(runner._refresh_copilot_model_config(), 0)
+
+            self.assertEqual(
+                [call.args[0] for call in run.call_args_list],
+                [
+                    [str(python), str(runner.SCRIPTS / "start_litellm.py"), "--auth-only"],
+                    [str(python), str(runner.SCRIPTS / "list_copilot_models.py"), "--refresh-config"],
+                ],
+            )
 
     def test_setup_does_not_report_success_when_installed_packages_fail_to_import(self):
         with tempfile.TemporaryDirectory() as temporary:

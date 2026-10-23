@@ -28,6 +28,7 @@ litellm_uuid.log
 proxy_server_config.yaml
 router_config.yaml
 .litellm/
+copilot-models.local.yaml
 
 # Local portable PostgreSQL (downloaded by: run postgres-init)
 postgres/

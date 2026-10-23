@@ -76,6 +76,7 @@ On Windows, also performs the Claude extension copy/PATH configuration from step
 Windows dependencies are installed into the workspace user's `%APPDATA%\Python\Python313\site-packages` (the version follows the Python interpreter). Setup removes existing dependencies from the venv's `Lib\site-packages`, preserving only pip and `roaming_user_site.pth`. The venv provides the interpreter; roaming provides application packages. Run `run setup` again to migrate an existing installation. This user package directory is shared with other projects using the same Python version, and setup upgrades its dependencies. Application Control policy still applies; contact your administrator if a native dependency remains blocked.
 
 Creates a Python virtual environment, installs dependencies, generates API keys in `.env`, and, with `--with-db`, **automatically sets up cost tracking**:
+- Authenticates with GitHub Copilot when needed and adds newly available enabled chat models to the ignored `copilot-models.local.yaml`; this does not start the proxy
 - **With `--with-db`, Windows**: downloads portable PostgreSQL (~350 MB, no admin required) into `postgres/`
 - **With `--with-db`, macOS**: starts your Homebrew PostgreSQL if available
 - **With `--with-db` but no PostgreSQL found**: setup completes without cost tracking — run `run cost-tracking-init` later
@@ -88,7 +89,7 @@ run claude-enable
 Backs up existing Claude settings and configures Claude Code to use `http://localhost:4444`.
 
 ### 4. Start the Proxy
-> **Note:** The first run will prompt for GitHub device authentication — follow the terminal instructions.
+> **Note:** If Copilot authentication was not completed during setup, startup will prompt for GitHub device authentication.
 ```
 run start
 ```
@@ -106,7 +107,7 @@ claude
 
 ## Available Models
 
-The proxy exposes these Anthropic models (configured in `copilot-config.yaml`):
+The proxy exposes these Anthropic models (configured in the ignored `copilot-models.local.yaml`):
 
 | Model name | GitHub Copilot model | Context |
 |---|---|---|
@@ -129,6 +130,7 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 | `run stop` | Stop the LiteLLM proxy |
 | `run list-models` | List all available GitHub Copilot models |
 | `run list-models-enabled` | List only enabled models |
+| `run refresh-models` | Add newly available enabled models to the ignored local model config and restart LiteLLM |
 | `run cost-tracking-init` | Set up cost tracking — auto-detects or installs PostgreSQL |
 | `run cost-tracking-init --postgres-url URL` | Set up cost tracking with a specific PostgreSQL URL |
 | `run postgres-init` | Explicitly set up local PostgreSQL (Windows: portable install; macOS: system/Homebrew) |
@@ -212,7 +214,7 @@ run prisma-init
     ```
   - If `run test` still fails with `[SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate`, the current CA bundle does not include the intercepting proxy root. Add that root cert to your trusted bundle or use the exported keychain PEM above.
 - **Unsupported parameter errors**: Already handled — `drop_params: true` is set in `copilot-config.yaml`.
-- **Wrong model name**: Run `run list-models-enabled` to see valid model IDs, then update `copilot-config.yaml`.
+- **Wrong model name**: Run `run list-models-enabled` to see valid model IDs, then update `copilot-models.local.yaml` or run `run refresh-models`.
 - **Reset everything**: `run claude-disable` → `run claude-enable`.
 - **macOS permission denied on `./run`**: Run `chmod +x run` to make the script executable.
 - **macOS `python` not found**: Use `python3` instead, or run `./run` which already uses `python3`.
