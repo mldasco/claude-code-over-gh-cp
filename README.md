@@ -14,7 +14,11 @@ Routes Claude Code through the GitHub Copilot API instead of Anthropic's servers
 |---|---|---|
 | **Python** | 3.11+ | [python.org/downloads](https://www.python.org/downloads/) or `brew install python` on macOS |
 | **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) or `brew install node` on macOS — includes `npm` |
+| **Visual Studio Code (Windows)** | 1.94+ | [code.visualstudio.com](https://code.visualstudio.com/) — enable **Add to PATH** during installation so `code` works in a terminal |
+| **Claude Code for VS Code (Windows)** | Latest compatible version | Install extension **Anthropic.claude-code** in local VS Code; `run install-claude` / `run setup` install it if missing |
 | **GitHub Copilot** | Active subscription | Required for API access |
+
+On Windows, VS Code and its Claude Code extension are required: setup uses the extension's bundled `claude.exe`, not a global npm installation. Node.js/npm remain needed for the existing Prisma cost-tracking tooling and for Claude installation on macOS/Linux.
 
 > **macOS note:** Xcode Command Line Tools (`xcode-select --install`) provide `python3` and `git`. Alternatively install Python via [Homebrew](https://brew.sh).
 
@@ -25,6 +29,8 @@ python3 --version   # should be 3.11+  (use 'python' on Windows)
 node --version       # should be 18+
 npm --version
 ```
+
+On Windows, also check `code --version`. After installing VS Code, reopen your terminal if `code` is not found.
 
 ## Quick Start
 
@@ -40,15 +46,34 @@ The `run` script lives in the repo root. How you invoke it depends on your shell
 
 The steps below show the command without a prefix — add the appropriate one for your shell.
 
-### 1. Install Claude Code (if not already installed)
+### 1. Install / configure Claude Code
 ```
 run install-claude
 ```
+
+**Windows:** Required even if an npm/native Claude installation already exists. This command:
+- Requires VS Code's `code` command and installs **Claude Code for VS Code** (`Anthropic.claude-code`) if missing.
+- Locates the installed extension using `code --locate-extension anthropic.claude-code`, without hard-coding its version or architecture.
+- Copies the bundled `resources\native-binary\claude.exe` to `claude.exe` in the extension root.
+- Prepends the extension root to your persistent **user PATH**, preserving unrelated entries and removing stale Claude extension version entries from the same extensions directory. No admin rights are needed.
+
+The resulting location is `%USERPROFILE%\.vscode\extensions\anthropic.claude-code-<version>-<platform>\claude.exe`: the root executable is an exact copy of the bundled native executable, and that root directory is first in user PATH. The extension version and platform suffix depend on your installation.
+
+Restart terminals and VS Code after setup so they pick up the updated PATH. If they still inherit the old PATH, sign out of Windows and back in. In a new PowerShell terminal, verify:
+```powershell
+where.exe claude
+claude --version
+```
+The first match should be the extension-root `claude.exe`, not an old npm shim or standalone installation. An earlier **system PATH** entry can still take precedence over user PATH; resolve that conflict through your normal workstation administration process.
+
+**macOS / Linux:** Uses the existing global npm installation (`npm install -g @anthropic-ai/claude-code`); VS Code is not required.
 
 ### 2. Initial Setup
 ```
 run setup
 ```
+On Windows, also performs the Claude extension copy/PATH configuration from step 1 before installing Python dependencies, so step 1 can be skipped when running `run setup`.
+
 Creates a Python virtual environment, installs dependencies, generates API keys in `.env`, and, with `--with-db`, **automatically sets up cost tracking**:
 - **With `--with-db`, Windows**: downloads portable PostgreSQL (~350 MB, no admin required) into `postgres/`
 - **With `--with-db`, macOS**: starts your Homebrew PostgreSQL if available
@@ -96,6 +121,7 @@ A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_F
 
 | Command | Description |
 |---|---|
+| `run install-claude` | Windows: install/find the VS Code extension, copy its bundled CLI to the extension root, and refresh user PATH; macOS/Linux: install via npm |
 | `run claude-status` | Show current Claude settings and proxy health |
 | `run claude-disable` | Restore Claude Code to default Anthropic servers |
 | `run stop` | Stop the LiteLLM proxy |
@@ -163,6 +189,9 @@ run prisma-init
 
 ## Troubleshooting
 
+- **WinGuard blocks `claude.exe` on Windows**: Setup reproduces the extension-root placement used on this workstation; it does not change or disable WinGuard policy. Use only an organization-approved VS Code/Claude extension installation. If execution is still blocked, ask IT/security to approve the executable/location rather than disabling protection.
+- **Claude extension updated or removed**: VS Code uses versioned extension directories. Re-run `run install-claude` (or `run setup`) after an update to copy the current bundled executable and replace the old extension PATH entry, then restart terminals/VS Code. If the extension was removed, the command reinstalls it. A running Claude process may lock the destination executable; close Claude and retry if copying fails.
+- **`claude` still resolves to an old install**: Run `where.exe claude` in a fresh terminal. The extension root must be the first match. Restart VS Code or sign out/in if PATH is stale; check for an earlier system PATH entry if the old install still wins.
 - **First run authentication**: `run start` will prompt for GitHub device auth — complete it in the browser.
 - **Connection errors**: Run `run test` to verify the proxy is reachable, and `run claude-status` to check settings.
 - **SSL certificate errors during `run cost-tracking-init`**: Prisma CLI is a Node.js binary. On Windows, this tool automatically exports the Windows trusted root store (including corporate CA certs from IT policy) and passes it to Node.js via `NODE_EXTRA_CA_CERTS`. If you still see SSL errors, set `NODE_EXTRA_CA_CERTS` manually:

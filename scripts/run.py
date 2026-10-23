@@ -8,7 +8,7 @@ Usage:
 Commands:
     help             Show this help message
     setup            Create venv, install dependencies, generate .env
-    install-claude   Install Claude Code globally via npm
+    install-claude   Configure Claude Code from VS Code (Windows); npm elsewhere
     start            Start the LiteLLM proxy
     stop             Stop the LiteLLM proxy
     test             Test proxy connection
@@ -625,6 +625,10 @@ def cmd_setup() -> int:
             "  py -3.12 scripts\\run.py setup"
         )
         return 1
+    if sys.platform == "win32":
+        rc = cmd_install_claude()
+        if rc != 0:
+            return rc
     print("Setting up environment...")
     Path(ROOT / "scripts").mkdir(exist_ok=True)
     _check([_base_python(), "-m", "venv", str(ROOT / "venv")], cwd=ROOT)
@@ -642,7 +646,88 @@ def cmd_setup() -> int:
     return 0
 
 
+def _configure_windows_claude_path(directory: Path) -> None:
+    import winreg
+
+    def updated_path(value: str) -> str:
+        entries = [
+            entry for entry in value.split(";")
+            if entry and os.path.normcase(os.path.expandvars(entry.strip('"')))
+            != os.path.normcase(str(directory))
+            and not (
+                Path(entry.strip('"')).name.lower().startswith("anthropic.claude-code-")
+                and Path(entry.strip('"')).parent == directory.parent
+            )
+        ]
+        return ";".join([str(directory), *entries])
+
+    with winreg.CreateKeyEx(
+        winreg.HKEY_CURRENT_USER, "Environment", 0,
+        winreg.KEY_READ | winreg.KEY_WRITE,
+    ) as key:
+        try:
+            user_path, value_type = winreg.QueryValueEx(key, "Path")
+        except FileNotFoundError:
+            user_path, value_type = "", winreg.REG_EXPAND_SZ
+        new_path = updated_path(user_path)
+        if new_path != user_path:
+            winreg.SetValueEx(key, "Path", 0, value_type, new_path)
+    os.environ["PATH"] = updated_path(os.environ.get("PATH", ""))
+
+
+def _install_windows_claude() -> int:
+    code = shutil.which("code")
+    if not code:
+        print("ERROR: VS Code is required. Install https://code.visualstudio.com/")
+        print("  Enable its 'Add to PATH' option, reopen your terminal, and retry.")
+        return 1
+
+    def locate_extension() -> Path | None:
+        result = subprocess.run(
+            [code, "--locate-extension", "anthropic.claude-code"],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                candidate = Path(line.strip())
+                if (candidate / "resources" / "native-binary" / "claude.exe").is_file():
+                    return candidate
+        return None
+
+    try:
+        directory = locate_extension()
+        if directory is None:
+            print("Installing the Claude Code VS Code extension...")
+            rc = _run([code, "--install-extension", "anthropic.claude-code"])
+            if rc != 0:
+                return rc
+            directory = locate_extension()
+        if directory is None:
+            print("ERROR: Cannot locate the extension's bundled Windows claude.exe.")
+            print("  Install/update 'Claude Code for VS Code' in your local VS Code profile.")
+            return 1
+
+        source = directory / "resources" / "native-binary" / "claude.exe"
+        destination = directory / "claude.exe"
+        import filecmp
+
+        if not destination.is_file() or not filecmp.cmp(source, destination, shallow=False):
+            shutil.copy2(source, destination)
+        _configure_windows_claude_path(directory)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"ERROR: Could not configure Claude Code: {exc}")
+        return 1
+    print(f"[OK] Claude Code: {destination}")
+    print("[OK] Extension directory is first in your user PATH.")
+    print("  Restart terminals/VS Code to pick up PATH; sign out/in if it stays stale.")
+    print("  After extension updates, rerun 'run install-claude' to refresh the path.")
+    print("  Verify in a new terminal: where.exe claude; claude --version")
+    return 0
+
+
 def cmd_install_claude() -> int:
+    if sys.platform == "win32":
+        return _install_windows_claude()
     npm = shutil.which("npm")
     if not npm:
         print("npm not found. Install Node.js from https://nodejs.org/ then retry.")
