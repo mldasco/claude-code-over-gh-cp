@@ -741,6 +741,13 @@ def cmd_install_claude() -> int:
 
 
 def cmd_start() -> int:
+    venv_python = _venv_python()
+    if not venv_python.is_file():
+        print("Python virtual environment not found. Run setup first:")
+        print("  Windows: run.cmd setup")
+        print("  macOS/Linux: ./run setup")
+        return 1
+
     # Re-apply patches in case litellm was upgraded since setup
     _apply_litellm_patches()
     # Kill any leftover litellm process from a previous run before starting.

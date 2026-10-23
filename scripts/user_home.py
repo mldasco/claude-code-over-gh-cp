@@ -3,7 +3,7 @@
 
 In this repo, commands can run under a service account while the workspace
 path is under another user profile. This helper prefers the workspace user
-home (e.g., C:\\Users\\mdasco) so tool state is written to the expected
+home (e.g., C:\\Users\\example-user) so tool state is written to the expected
 profile.
 """
 
