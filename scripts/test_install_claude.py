@@ -89,6 +89,37 @@ class WindowsClaudeInstallTests(unittest.TestCase):
             self.assertEqual(runner.cmd_setup(), 1)
             check.assert_not_called()
 
+    def test_configures_versioned_roaming_user_site(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "checkout"
+            home = Path(temporary) / "workspace-user"
+            roaming_site = (
+                home
+                / "AppData"
+                / "Roaming"
+                / "Python"
+                / f"Python{runner.sys.version_info.major}{runner.sys.version_info.minor}"
+                / "site-packages"
+            )
+            with patch.object(runner, "ROOT", root), patch.object(
+                runner.sys, "platform", "win32"
+            ), patch.object(runner, "resolve_workspace_user_home", return_value=home):
+                runner._configure_roaming_user_site()
+                pth_file = root / "venv" / "Lib" / "site-packages" / "roaming_user_site.pth"
+                self.assertEqual(pth_file.read_text(encoding="utf-8"), f"{roaming_site}\n")
+                self.assertTrue(roaming_site.is_dir())
+
+                pth_file.write_text("stale path\n", encoding="utf-8")
+                runner._configure_roaming_user_site()
+                self.assertEqual(pth_file.read_text(encoding="utf-8"), f"{roaming_site}\n")
+
+    def test_roaming_user_site_is_not_configured_off_windows(self):
+        with patch.object(runner.sys, "platform", "linux"), patch.object(
+            runner, "resolve_workspace_user_home"
+        ) as resolve_home:
+            runner._configure_roaming_user_site()
+        resolve_home.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

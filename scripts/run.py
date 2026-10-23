@@ -36,6 +36,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from user_home import resolve_workspace_user_home
+
 SCRIPTS = Path(__file__).parent
 ROOT = SCRIPTS.parent
 
@@ -71,6 +73,26 @@ def _venv_python() -> Path:
     if sys.platform == "win32":
         return ROOT / "venv" / "Scripts" / "python.exe"
     return ROOT / "venv" / "bin" / "python"
+
+
+def _configure_roaming_user_site() -> None:
+    if sys.platform != "win32":
+        return
+
+    version = f"Python{sys.version_info.major}{sys.version_info.minor}"
+    roaming_site = (
+        resolve_workspace_user_home()
+        / "AppData"
+        / "Roaming"
+        / "Python"
+        / version
+        / "site-packages"
+    )
+    roaming_site.mkdir(parents=True, exist_ok=True)
+
+    pth_file = ROOT / "venv" / "Lib" / "site-packages" / "roaming_user_site.pth"
+    pth_file.parent.mkdir(parents=True, exist_ok=True)
+    pth_file.write_text(f"{roaming_site}\n", encoding="utf-8")
 
 
 def _run(cmd: list[str], **kwargs) -> int:
@@ -632,6 +654,7 @@ def cmd_setup() -> int:
     print("Setting up environment...")
     Path(ROOT / "scripts").mkdir(exist_ok=True)
     _check([_base_python(), "-m", "venv", str(ROOT / "venv")], cwd=ROOT)
+    _configure_roaming_user_site()
     _check([str(_venv_python()), "-m", "pip", "install", "-r", "requirements.txt"], cwd=ROOT)
     _apply_litellm_patches()
     env_file = ROOT / ".env"
