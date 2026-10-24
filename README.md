@@ -2,7 +2,12 @@
 
 ## Overview
 
-Routes Claude Code through the GitHub Copilot API instead of Anthropic's servers, using a local LiteLLM proxy as a translation layer. No company data leaves to Anthropic — all traffic goes through our existing GitHub Copilot agreement.
+Routes Claude Code through a Transurban-approved backend instead of Anthropic's public servers, so no company data leaves to Anthropic. Two modes are supported:
+
+- **Local proxy mode** (default in this repo) — routes Claude Code through the GitHub Copilot API using a local LiteLLM proxy as a translation layer. All traffic goes through our existing GitHub Copilot agreement. Set up with `.\run setup` → `.\run claude-enable-local` → `.\run start`.
+- **Gateway mode** — points Claude Code at Transurban's hosted **AI Gateway** (`https://tokens.transurban.tech`), which proxies to Claude Opus on Amazon Bedrock inside Transurban's environment. No local proxy, Copilot seat, or PostgreSQL needed — just a personal key and VPN. Set up with `.\run claude-enable-gateway`. See [Gateway mode](#gateway-mode-transurban-ai-gateway).
+
+Both modes write to `~/.claude/settings.json`; `.\run claude-disable` restores Claude Code to its defaults, and `.\run claude-status` shows which mode is active.
 
 **References:**
 - [Claude Code LLM Gateway](https://docs.anthropic.com/en/docs/claude-code/llm-gateway)
@@ -49,13 +54,22 @@ On Windows, also check `code --version`. After installing VS Code, reopen your t
 ```
 .\run doctor         # confirm prerequisites (optional)
 .\run setup          # venv + deps + .env  (also installs the Claude VS Code extension on Windows)
-.\run claude-enable  # point Claude Code at the local proxy (localhost:4444)
+.\run claude-enable-local  # point Claude Code at the local proxy (localhost:4444)
 .\run start          # start the proxy — completes GitHub device auth in your browser on first run
 .\run test           # verify the connection (optional)
 claude             # use Claude Code in your project
 ```
 
-Three commands are essential — `setup` → `claude-enable` → `start` — then run `claude`. No database is used by default; pass `--with-db` to `setup` and `start` for PostgreSQL-backed cost tracking. On Windows, restart your terminal after the first `setup` so `claude` resolves on PATH.
+Three commands are essential — `setup` → `claude-enable-local` → `start` — then run `claude`. No database is used by default; pass `--with-db` to `setup` and `start` for PostgreSQL-backed cost tracking. On Windows, restart your terminal after the first `setup` so `claude` resolves on PATH.
+
+**Prefer the hosted gateway?** Skip `setup`/`start` entirely — just point Claude Code at the Transurban AI Gateway with your personal key:
+
+```
+.\run claude-enable-gateway    # prompts for your sk-... key (or reads GATEWAY_KEY / .env)
+claude                         # use Claude Code (must be on the corporate network / VPN)
+```
+
+See [Gateway mode](#gateway-mode-transurban-ai-gateway) for details.
 
 The detailed walkthrough follows.
 
@@ -110,7 +124,7 @@ Creates a Python virtual environment, installs dependencies, generates API keys 
 
 ### 3. Configure Claude Code
 ```
-.\run claude-enable
+.\run claude-enable-local
 ```
 Backs up existing Claude settings and configures Claude Code to use `http://localhost:4444`.
 
@@ -142,6 +156,8 @@ claude
 | Command | Description |
 |---|---|
 | `.\run doctor` | Check prerequisites (Python/VS Code/Node) and GitHub Copilot seat without changing anything |
+| `.\run claude-enable-local` | Point Claude Code at the local LiteLLM proxy (`localhost:4444`) |
+| `.\run claude-enable-gateway [sk-key]` | Point Claude Code at the Transurban AI Gateway (`tokens.transurban.tech`) |
 | `.\run install-claude` | Windows: install/find the VS Code extension, copy its bundled CLI to the extension root, and refresh user PATH; macOS/Linux: install via npm |
 | `.\run claude-status` | Show current Claude settings and proxy health |
 | `.\run claude-disable` | Restore Claude Code to default Anthropic servers |
@@ -209,6 +225,23 @@ run prisma-init
 
 **Full documentation:** [LiteLLM Docker Quick Start - Virtual Keys](https://docs.litellm.ai/docs/proxy/docker_quick_start#optional-generate-a-virtual-key)
 
+## Gateway mode (Transurban AI Gateway)
+
+Instead of running the local LiteLLM proxy against a GitHub Copilot seat, you can point Claude Code at Transurban's hosted **AI Gateway** (`https://tokens.transurban.tech`), which proxies to Claude Opus on Amazon Bedrock inside Transurban's environment. Usage is metered against a personal key with its own budget. See the Confluence playbook *Claude Code via the Transurban AI Gateway* for the full background.
+
+This mode needs no `setup`, proxy, PostgreSQL, or Copilot seat — just a personal key and a connection to the corporate network/VPN.
+
+```
+.\run claude-enable-gateway            # prompts for your sk-... key (or reads GATEWAY_KEY / .env)
+.\run claude-enable-gateway sk-xxxx    # or pass the key directly
+.\run claude-status                    # confirm the gateway is selected and reachable
+claude                                 # use Claude Code
+```
+
+The key is resolved from, in order: the command argument, the `GATEWAY_KEY` environment variable, a `GATEWAY_KEY=sk-...` line in `.env`, then an interactive prompt. Request a key via the **Code Assisted Development** MS Teams channel. `claude-enable-gateway` backs up your existing `~/.claude/settings.json` first, and `.\run claude-disable` restores Claude Code to its defaults.
+
+**Requirements:** you must be on the corporate network or VPN — the gateway is internal-only and not reachable off-VPN or via a Zscaler-proxied connection.
+
 ## Troubleshooting
 
 - **WinGuard blocks `claude.exe` on Windows**: Setup reproduces the extension-root placement used on this workstation; it does not change or disable WinGuard policy. Use only an organization-approved VS Code/Claude extension installation. If execution is still blocked, ask IT/security to approve the executable/location rather than disabling protection.
@@ -233,7 +266,7 @@ run prisma-init
   - If `.\run test` still fails with `[SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer certificate`, the current CA bundle does not include the intercepting proxy root. Add that root cert to your trusted bundle or use the exported keychain PEM above.
 - **Unsupported parameter errors**: Already handled — `drop_params: true` is set in `copilot-config.yaml`.
 - **Wrong model name**: Run `.\run list-models-enabled` to see valid model IDs, then update `copilot-models.local.yaml` or run `.\run refresh-models`.
-- **Reset everything**: `.\run claude-disable` → `.\run claude-enable`.
+- **Reset everything**: `.\run claude-disable` → `.\run claude-enable-local`.
 - **macOS permission denied on `./run`**: Run `chmod +x run` to make the script executable.
 - **macOS `python` not found**: Use `python3` instead, or run `./run` which already uses `python3`.
 - **Cost tracking DB errors on Windows (`All connection attempts failed`)**: LiteLLM's DB health watchdog uses `os.kill(pid, 0)` to check whether the Prisma query-engine process is alive. On Windows, signal 0 equals `CTRL_C_EVENT`, so this call actually **terminates** the engine instead of probing it. `.\run setup` and `.\run start` automatically patch the affected function in the installed litellm package with a safe Windows API call (`OpenProcess`). If you see these errors after upgrading litellm, run `.\run setup` again to re-apply the patch.

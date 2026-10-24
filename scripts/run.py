@@ -13,7 +13,10 @@ Commands:
     start            Start the LiteLLM proxy
     stop             Stop the LiteLLM proxy
     test             Test proxy connection
-    claude-enable    Configure Claude Code to use the local proxy
+    claude-enable-local    Configure Claude Code to use the local proxy
+    claude-enable-gateway [sk-key]  Configure Claude Code to use the Transurban AI
+                     Gateway (tokens.transurban.tech). Key comes from the argument,
+                     GATEWAY_KEY, .env, or an interactive prompt.
     claude-disable   Restore Claude Code to default Anthropic settings
     claude-status    Show current Claude Code configuration and proxy health
     list-models      List all available GitHub Copilot models
@@ -898,7 +901,7 @@ def cmd_install_claude() -> int:
     rc = _run([npm, "install", "-g", "@anthropic-ai/claude-code"])
     if rc == 0:
         print("Claude Code installed successfully.")
-        print("Run:  run claude-enable")
+        print("Run:  run claude-enable-local")
     return rc
 
 
@@ -1007,6 +1010,17 @@ def cmd_claude_enable() -> int:
     if rc == 0:
         print("[OK] Claude Code configured to use local proxy")
         print("[TIP] Run 'run start' to start the LiteLLM proxy")
+    return rc
+
+
+def cmd_gateway_enable() -> int:
+    print("Configuring Claude Code to use the Transurban AI Gateway...")
+    cmd = [_python(), str(SCRIPTS / "claude_gateway_enable_with_backup.py")]
+    cmd.extend(sys.argv[2:])  # pass through an optional sk-... key argument
+    rc = _run(cmd, cwd=ROOT)
+    if rc == 0:
+        print("[OK] Claude Code configured to use https://tokens.transurban.tech/")
+        print("[TIP] You must be on the corporate network or VPN to reach the gateway")
     return rc
 
 
@@ -1304,7 +1318,7 @@ def cmd_generate_key() -> int:
     print(f"[OK] Virtual key created: {new_key[:24]}...")
     print(f"     Budget: $20.00/day  —  resets daily")
     print(f"     Visible in admin UI: {base_url}/ui")
-    print("     Run 'run claude-enable' to apply this key to Claude Code.")
+    print("     Run 'run claude-enable-local' to apply this key to Claude Code.")
     return 0
 
 
@@ -1325,7 +1339,8 @@ COMMANDS: dict[str, object] = {
     "start": cmd_start,
     "stop": cmd_stop,
     "test": cmd_test,
-    "claude-enable": cmd_claude_enable,
+    "claude-enable-local": cmd_claude_enable,
+    "claude-enable-gateway": cmd_gateway_enable,
     "claude-disable": cmd_claude_disable,
     "claude-status": cmd_claude_status,
     "list-models": cmd_list_models,

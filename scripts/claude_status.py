@@ -58,6 +58,22 @@ def main() -> int:
             print("Proxy server: Not running (run 'run start')")
         except Exception:
             print("Proxy server: Not running (run 'run start')")
+    elif "tokens.transurban.tech" in text:
+        print("Status: Using Transurban AI Gateway (tokens.transurban.tech)")
+        req = Request(
+            "https://tokens.transurban.tech/health/readiness",
+            method="GET",
+        )
+        try:
+            urlopen(req, timeout=5)
+            print("Gateway: Reachable")
+        except HTTPError:
+            # An HTTP response means the endpoint is reachable.
+            print("Gateway: Reachable")
+        except URLError:
+            print("Gateway: Not reachable (connect to the corporate network or VPN)")
+        except Exception:
+            print("Gateway: Not reachable (connect to the corporate network or VPN)")
     else:
         print("Status: Using default Anthropic servers")
 
