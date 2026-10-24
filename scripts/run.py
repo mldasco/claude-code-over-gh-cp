@@ -676,12 +676,12 @@ def _preflight() -> int:
     blocking = False
 
     vi = sys.version_info
-    if (3, 13) <= vi < (3, 14):
+    if (3, 13) <= vi < (3, 15):
         print(f"  [OK]   Python {vi.major}.{vi.minor}.{vi.micro}")
     else:
-        print(f"  [FAIL] Python {vi.major}.{vi.minor} - this project requires Python 3.13.")
+        print(f"  [FAIL] Python {vi.major}.{vi.minor} - this project requires Python 3.13 or 3.14.")
         print("         Install from https://python.org/downloads/ and re-run with it, e.g.:")
-        print("           py -3.13 scripts\\run.py setup")
+        print("           py -3.14 scripts\\run.py setup")
         blocking = True
 
     if sys.platform == "win32":

@@ -12,7 +12,7 @@ Routes Claude Code through the GitHub Copilot API instead of Anthropic's servers
 
 | Dependency | Minimum version | Install |
 |---|---|---|
-| **Python** | 3.13 | [python.org/downloads](https://www.python.org/downloads/) or `brew install python@3.13` on macOS |
+| **Python** | 3.13 or 3.14 | [python.org/downloads](https://www.python.org/downloads/) or `brew install python@3.13` on macOS |
 | **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) or `brew install node` on macOS — includes `npm` |
 | **Visual Studio Code (Windows)** | 1.94+ | [code.visualstudio.com](https://code.visualstudio.com/) — enable **Add to PATH** during installation so `code` works in a terminal |
 | **Claude Code for VS Code (Windows)** | Latest compatible version | Install extension **Anthropic.claude-code** in local VS Code; `run install-claude` / `run setup` install it if missing |
@@ -35,7 +35,7 @@ It reports Python version, VS Code (Windows), Node.js, and — once you've authe
 To check interpreter versions manually:
 
 ```bash
-python3 --version   # should be 3.13   (use 'python' on Windows)
+python3 --version   # should be 3.13 or 3.14   (use 'python' on Windows)
 node --version       # should be 18+
 npm --version
 ```
@@ -44,7 +44,7 @@ On Windows, also check `code --version`. After installing VS Code, reopen your t
 
 ## Quick Start
 
-**TL;DR** — from a fresh clone, with [prerequisites](#prerequisites) installed (Python 3.13; VS Code on Windows / Node on macOS-Linux). Prefix commands with `./` on macOS/Linux, nothing on Windows:
+**TL;DR** — from a fresh clone, with [prerequisites](#prerequisites) installed (Python 3.13 or 3.14; VS Code on Windows / Node on macOS-Linux). Prefix commands with `./` on macOS/Linux, nothing on Windows:
 
 ```
 run doctor         # confirm prerequisites (optional)
