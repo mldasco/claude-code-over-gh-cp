@@ -121,30 +121,21 @@ Backs up existing Claude settings and configures Claude Code to use `http://loca
 ```
 On Windows, startup requires the pip-only venv layout and verifies that Pydantic Core and LiteLLM import successfully before stopping any existing proxy. If the venv still contains local dependencies, startup asks you to run setup instead of silently using a mixed installation.
 
+> **The proxy runs in the foreground and keeps this terminal busy.** Leave it running and open a **new terminal** (in the same project directory) for steps 5 and 6.
+
 ### 5. Test the Connection
+
+In a new terminal:
 ```
 .\run test
 ```
 
 ### 6. Start Claude Code in your project
+
+In that same new terminal:
 ```
 claude
 ```
-
-## Available Models
-
-The proxy exposes these Anthropic models (configured in the ignored `copilot-models.local.yaml`):
-
-| Model name | GitHub Copilot model | Context |
-|---|---|---|
-| `claude-opus-4-8` *(default)* | `github_copilot/claude-opus-4.8` | 200k |
-| `claude-opus-5` | `github_copilot/claude-opus-5` | 200k |
-| `claude-sonnet-5` | `github_copilot/claude-sonnet-5` | 200k |
-| `claude-haiku-4-5` | `github_copilot/claude-haiku-4.5` | 200k |
-
-To switch the default model, edit `ANTHROPIC_MODEL` in `~/.claude/settings.json`, or update `scripts/claude_enable.py` and re-run `.\run claude-enable`.
-
-A `gpt-4` model is also available as the fast/small fallback (`ANTHROPIC_SMALL_FAST_MODEL`).
 
 ## Additional Commands
 
